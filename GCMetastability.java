@@ -140,7 +140,7 @@ public class GCMetastability{
 	    Global.num_reqs = Global.num_warmup_reqs + (Global.original_arrival_rate * Global.stage_dur) + (Global.highest_arrival_rate * Global.stage_dur) + (Global.arr_after_first_load_shedding * Global.stage_dur) + (Global.arr_after_second_load_shedding * Global.stage_dur) + (Global.arr_after_thrid_load_shedding * Global.stage_dur);
 	    System.out.println("Running experiment with load-spike trigger");
 	} else {// capacity degradation trigger
-	    if (Global.trigger_dur > 0) {
+	    if (Global.trigger_dur >= 0) {
 		Global.apply_trigger = true;
 		Global.auto_detect = true;
 	    }
