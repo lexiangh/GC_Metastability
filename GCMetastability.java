@@ -24,7 +24,6 @@ class Global{
     public static String record_filepath="./exp_record.csv";
 
     public static int num_reqs;
-    public static String exp_timestamp;
     public static Result[] results;
 
     public static boolean warmup = true;
@@ -84,7 +83,7 @@ class Task implements Runnable{
 	    if (Global.apply_trigger && i > Global.num_warmup_reqs && i < Global.num_warmup_reqs + Global.curr_arrival_rate * Global.trigger_offset){
                 Global.num_data_before_trigger += 1;
                 Global.sum_latency_before_trigger += Global.results[i].completion_t - Global.results[i].arrival_t;
-            } else if (Global.apply_trigger && Global.auto_detect && i > Global.num_warmup_reqs + Global.curr_arrival_rate * (Global.trigger_offset + Global.main_delay/1e3 + 10)) {
+            } else if (Global.apply_trigger && Global.auto_detect && i > Global.num_warmup_reqs + Global.curr_arrival_rate * (Global.trigger_offset + Global.trigger_dur/1e3 + 10)) {
 		// start detecting after 10s for system to stabalize
 		double avg_latency_before_trigger = Global.sum_latency_before_trigger/Global.num_data_before_trigger;
                 long curr_latency = Global.results[i].completion_t-Global.results[i].arrival_t;
@@ -96,7 +95,7 @@ class Task implements Runnable{
 		if(Global.num_reqs_back_to_normal_latency > Global.window_for_success * Global.curr_arrival_rate){
                     System.out.println("System succeeds due to latency(ms): " + curr_latency/1e6 + " is below or about the same as the average before the trigger: " + avg_latency_before_trigger/1e6);
                     FileWriter fw = new FileWriter(Global.record_filepath, true);
-                    fw.write(Global.exp_timestamp + "," + Global.curr_curr_arrival_rate + "," + Global.trigger_dur + "," + Global.num_reqs/Global.curr_arrival_rate + "," + "Success\n");
+                    fw.write(Global.curr_arrival_rate + "," + Global.trigger_dur + "," + Global.num_reqs/Global.curr_arrival_rate + "," + "Success\n");
                     fw.close();
                     System.exit(0);
                 }
@@ -123,14 +122,14 @@ public class GCMetastability{
 	    System.out.println("Please enter arrival rate, trigger duration(ms) and experiments duration(s)");
 	    System.exit(0);
 	}
-
+	
 	Global.curr_arrival_rate = Integer.parseInt(args[0]);
 	Global.trigger_dur = Integer.parseInt(args[1]);
-	
-	if (trigger_dur < 0) { // load-spike trigger
+
+	if (Global.trigger_dur < 0) { // load-spike trigger
 	    // setting up arrival rate pattern
 	    int rps_level_interval = 50;
-	    Global.original_arrival_rate = curr_arrival_rate;
+	    Global.original_arrival_rate = Global.curr_arrival_rate;
 	    Global.highest_arrival_rate = Global.original_arrival_rate + 2 * rps_level_interval;
 	    Global.arr_after_first_load_shedding = Global.highest_arrival_rate - rps_level_interval;
 	    Global.arr_after_second_load_shedding = Global.arr_after_first_load_shedding - rps_level_interval;
@@ -138,16 +137,16 @@ public class GCMetastability{
 
 	    // setting up experiment durations
 	    Global.num_reqs = (int)((1/Global.warmup_interarrival_time) * Global.warmup_endtime_offset) + (Global.original_arrival_rate * Global.stage_dur) + (Global.highest_arrival_rate * Global.stage_dur) + (Global.arr_after_first_load_shedding * Global.stage_dur) + (Global.arr_after_second_load_shedding * Global.stage_dur) + (Global.arr_after_thrid_load_shedding * Global.stage_dur);
-	    Global.stage_dur = int(Integer.parseInt(args[2]) / 5); // 5 stages of diffferent load levels
-	    System.out.println(Global.exp_timestamp + " Running experiment with load-spike trigger");
+	    Global.stage_dur = (int)(Integer.parseInt(args[2]) / 5); // 5 stages of diffferent load levels
+	    System.out.println("Running experiment with load-spike trigger");
 	} else {// capacity degradation trigger
-	    if (trigger_dur > 0) {
+	    if (Global.trigger_dur > 0) {
 		Global.apply_trigger = true;
 		Global.auto_detect = true;
 	    }
 	    Global.num_reqs = Global.curr_arrival_rate * Integer.parseInt(args[2]);
-	    Global.trigger_offset = Global.warmup_end_offset + int(Global.warmup_sleep_dur/1000); // apply trigger right after warmup
-	    System.out.println(Global.exp_timestamp + " Running experiment with capacity degradation trigger [rps_triggerDur(ms)_expDur(s)]: " + Global.curr_arrival_rate + "_" + Global.trigger_dur + "_" + Global.num_reqs/Global.curr_arrival_rate);
+	    Global.trigger_offset = Global.warmup_endtime_offset + (int)(Global.warmup_sleep_dur/1000); // apply trigger right after warmup
+	    System.out.println("Running experiment with capacity degradation trigger [rps_triggerDur(ms)_expDur(s)]: " + Global.curr_arrival_rate + "_" + Global.trigger_dur + "_" + Global.num_reqs/Global.curr_arrival_rate);
 	}
 	
 	//add time padding for jvm initialization
@@ -214,7 +213,7 @@ public class GCMetastability{
                     System.out.println("Finished applying capacity degradation trigger.");
 		}
 		
-		if (trigger_dur < 0) { //load-spike trigger
+		if (Global.trigger_dur < 0) { //load-spike trigger
 		    if (i == Global.num_warmup_reqs + (Global.original_arrival_rate * Global.stage_dur)){
 			System.out.println("Goes up to highest...");
 			Global.curr_arrival_rate = Global.highest_arrival_rate;
@@ -269,7 +268,7 @@ public class GCMetastability{
 	    
 	    if (Global.auto_detect){
 		FileWriter fw2 = new FileWriter(Global.record_filepath, true);
-		fw2.write(Global.exp_timestamp + "," + Global.curr_arrival_rate + "," + Global.trigger_dur + "," + Global.num_reqs/Global.curr_arrival_rate + ",Failure\n");
+		fw2.write(Global.curr_arrival_rate + "," + Global.trigger_dur + "," + Global.num_reqs/Global.curr_arrival_rate + ",Failure\n");
 		fw2.close();
 		System.out.println("System showed metastable failure due to high latency till the end of the experiment.");
 	    }
