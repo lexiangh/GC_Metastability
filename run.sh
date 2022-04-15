@@ -3,7 +3,8 @@
 rps=$1
 trigger_duration=$2 # in ms
 experiment_duration=$3 # in second
-maxheapsize=$4 #e.g., 256m
+auto_detection_enabled=$4 # positive integer indicates "true"
+maxheapsize=$5 #e.g., 256m
 
 image_name="exp"
 container_name="exp_container"
@@ -20,7 +21,7 @@ sudo docker cp GCMetastability.java ${container_name}:/gc_artifacts/GCMetastabil
 sleep 2
 
 sudo docker exec ${container_name} /bin/bash -c "
-javac GCMetastability.java && java -XX:MaxHeapSize=${maxheapsize} -XX:+CrashOnOutOfMemoryError -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -Xloggc:gc.log GCMetastability ${rps} ${trigger_duration} ${experiment_duration} &
+javac GCMetastability.java && java -XX:MaxHeapSize=${maxheapsize} -XX:+CrashOnOutOfMemoryError -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -Xloggc:gc.log GCMetastability ${rps} ${trigger_duration} ${experiment_duration} ${auto_detection_enabled} &
 sleep 2;
 vmid=\$(jps | grep GCMetastability | awk '{print \$1}');
 jstat -gcutil -t \${vmid} 100 > gc.csv;

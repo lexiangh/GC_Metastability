@@ -118,14 +118,18 @@ public class GCMetastability{
     }
 
     public static void main(String[] args){
-	if (args.length < 3){
-	    System.out.println("Please enter arrival rate, trigger duration(ms) and experiments duration(s)");
+	if (args.length < 4){
+	    System.out.println("Please enter arrival rate, trigger duration(ms), experiments duration(s) and metastable failure detection enabled");
 	    System.exit(0);
 	}
 	
 	Global.curr_arrival_rate = Integer.parseInt(args[0]);
 	Global.trigger_dur = Integer.parseInt(args[1]);
 
+	if (Integer.parseInt(args[3]) > 0) {
+	    Global.auto_detect = true;
+	}
+	
 	if (Global.trigger_dur < 0) { // load-spike trigger
 	    // setting up arrival rate pattern
 	    int rps_level_interval = 50;
@@ -142,7 +146,6 @@ public class GCMetastability{
 	} else {// capacity degradation trigger
 	    if (Global.trigger_dur >= 0) {
 		Global.apply_trigger = true;
-		Global.auto_detect = true;
 	    }
 	    Global.num_reqs = Global.curr_arrival_rate * Integer.parseInt(args[2]);
 	    Global.trigger_offset = Global.warmup_endtime_offset + (int)(Global.warmup_sleep_dur/1000); // apply trigger right after warmup
